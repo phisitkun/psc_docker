@@ -7,8 +7,8 @@ services:
     environment:
       MYSQL_DATABASE: wordpress_db
       MYSQL_USER: wp_user
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_PASSWORD: db_password
+      MYSQL_ROOT_PASSWORD: db_root_password
     volumes:
       - ./db-data:/var/lib/mysql
     healthcheck:
@@ -26,10 +26,10 @@ services:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_NAME: wordpress_db
       WORDPRESS_DB_USER: wp_user
-      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_DB_PASSWORD: db_password
     volumes:
-      # Only mount wp-content, NOT the whole root folder
       - ./wp-content:/var/www/html/wp-content
       - ./php.ini:/usr/local/etc/php/conf.d/uploads.ini
+    # ports: # Railway จะจัดการ Port ให้เอง ถ้าจะรัน Local ให้เปิดบรรทัดนี้ไว้ ถ้าขึ้น Railway ไม่ต้องใส่
     ports:
       - "8080:80"

@@ -1,6 +1,6 @@
 FROM wordpress:php8.3-apache
 
-# ติดตั้ง WP-CLI (คงเดิม)
+# 1. ติดตั้ง WP-CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
         less \
         && rm -rf /var/lib/apt/lists/* \
@@ -8,9 +8,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
 
-# ตั้งค่า Permissions (คงเดิม)
+# 2. แก้ปัญหา MPM (ทำตอน Build เลย)
+RUN a2dismod mpm_event mpm_worker && a2enmod mpm_prefork
+
+# 3. แก้ปัญหา AH00558 (ServerName) โดยสร้างไฟล์ config ใหม่
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# 4. ตั้งค่า Permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# --- ส่วนนี้คือจุดสำคัญ: สั่งรันคำสั่งแก้ไข MPM ทันทีที่ Container เริ่มทำงาน ---
-# เราจะ Discard ค่าเดิม และเปิด mpm_prefork ก่อนที่จะรัน apache2-foreground (ตัวเริ่มเว็บ)
-CMD ["bash", "-c", "a2dismod mpm_event mpm_worker && a2enmod mpm_prefork && apache2-foreground"]
+# --- สังเกตว่าเราไม่ใช้ CMD แล้ว! ให้ใช้ Default Entrypoint ของ Image ---
