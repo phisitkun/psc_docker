@@ -1,20 +1,40 @@
 FROM wordpress:php8.3-apache
 
-# 1. ติดตั้ง WP-CLI
-RUN apt-get update && apt-get install -y --no-install-recommends less && rm -rf /var/lib/apt/lists/* \
-    && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-    && chmod +x wp-cli.phar \
-    && mv wp-cli.phar /usr/local/bin/wp
+# ---- SYSTEM SETUP ----
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        less \
+        curl \
+    ; \
+    rm -rf /var/lib/apt/lists/*
 
-# 2. แก้ปัญหา AH00534 (ใช้ RUN ไม่ใช่ CMD)
-# การทำแบบนี้จะทำให้ Apache พร้อมใช้งานทันทีที่ Container รันขึ้นมา
-RUN a2dismod mpm_event mpm_worker && a2enmod mpm_prefork
+# ---- INSTALL WP-CLI (PIN VERSION) ----
+ENV WP_CLI_VERSION=2.10.0
 
-# 3. เซต ServerName เพื่อแก้ Warning AH00558
+RUN curl -fsSL -o /usr/local/bin/wp https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar \
+    && chmod +x /usr/local/bin/wp
+
+# ---- APACHE CONFIG ----
+RUN a2dismod mpm_event mpm_worker \
+    && a2enmod mpm_prefork rewrite headers expires
+
+# Fix ServerName warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# 4. Permissions
+# ---- WORDPRESS PERMISSIONS ----
 RUN chown -R www-data:www-data /var/www/html
 
-# *** สำคัญที่สุด: ห้ามใช้ CMD override entrypoint ***
-# เราไม่ต้องใส่ CMD ใดๆ ให้มันใช้ CMD และ ENTRYPOINT ของ image หลักไปเลย
+# ---- OPTIONAL: PHP TUNING ----
+RUN { \
+    echo "upload_max_filesize=64M"; \
+    echo "post_max_size=64M"; \
+    echo "memory_limit=256M"; \
+    echo "max_execution_time=120"; \
+} > /usr/local/etc/php/conf.d/custom.ini
+
+# ---- HEALTHCHECK (สำคัญสำหรับ Railway) ----
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s \
+  CMD curl -f http://localhost/ || exit 1
+
+# ❗ ไม่ต้อง override CMD / ENTRYPOINT
