@@ -1,6 +1,6 @@
 FROM wordpress:php8.3-apache
 
-# 1. ติดตั้ง System Dependencies ที่จำเป็น
+# ติดตั้ง WP-CLI (คงเดิม)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         less \
         && rm -rf /var/lib/apt/lists/* \
@@ -8,10 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
 
-# 2. แก้ไข MPM (แก้ปัญหา Apache Conflict โดยถาวร)
-RUN a2dismod mpm_event mpm_worker && a2enmod mpm_prefork
-
-# 3. Permissions (จัดการเฉพาะที่จำเป็น)
+# ตั้งค่า Permissions (คงเดิม)
 RUN chown -R www-data:www-data /var/www/html
 
-# สังเกต: เราไม่มี CMD ตรงนี้ เพราะเราจะปล่อยให้ Entrypoint ของ Official Image ทำงานเอง
+# --- ส่วนนี้คือจุดสำคัญ: สั่งรันคำสั่งแก้ไข MPM ทันทีที่ Container เริ่มทำงาน ---
+# เราจะ Discard ค่าเดิม และเปิด mpm_prefork ก่อนที่จะรัน apache2-foreground (ตัวเริ่มเว็บ)
+CMD ["bash", "-c", "a2dismod mpm_event mpm_worker && a2enmod mpm_prefork && apache2-foreground"]
