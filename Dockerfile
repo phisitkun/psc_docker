@@ -1,24 +1,16 @@
 FROM wordpress:php8.3-apache
 
-# ---- SYSTEM + WP-CLI ----
+# ติดตั้ง WP-CLI (คงเดิม)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        less curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-    && chmod +x /usr/local/bin/wp
+        less \
+        && rm -rf /var/lib/apt/lists/* \
+    && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
 
-# ---- FIX APACHE (แก้ 403 ตัวจริง) ----
-RUN a2dismod mpm_event mpm_worker \
-    && a2enmod mpm_prefork rewrite \
-    && echo "<Directory /var/www/html>\n\
-    Options Indexes FollowSymLinks\n\
-    AllowOverride All\n\
-    Require all granted\n\
-</Directory>" > /etc/apache2/conf-available/wordpress.conf \
-    && a2enconf wordpress
-
-# ---- PERMISSION ----
+# ตั้งค่า Permissions (คงเดิม)
 RUN chown -R www-data:www-data /var/www/html
 
-# ---- RUN ----
-CMD ["apache2-foreground"]
+# --- ส่วนนี้คือจุดสำคัญ: สั่งรันคำสั่งแก้ไข MPM ทันทีที่ Container เริ่มทำงาน ---
+# เราจะ Discard ค่าเดิม และเปิด mpm_prefork ก่อนที่จะรัน apache2-foreground (ตัวเริ่มเว็บ)
+CMD ["bash", "-c", "a2dismod mpm_event mpm_worker && a2enmod mpm_prefork && apache2-foreground"]
