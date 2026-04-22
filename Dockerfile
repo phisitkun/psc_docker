@@ -5,26 +5,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     less curl \
     && rm -rf /var/lib/apt/lists/*
 
-# ---- WP-CLI ----
-ENV WP_CLI_VERSION=2.10.0
-RUN curl -fsSL -o /usr/local/bin/wp https://github.com/wp-cli/builds/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar \
+# ---- WP-CLI (optional แต่แนะนำ) ----
+RUN curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x /usr/local/bin/wp
 
-# ---- FIX APACHE (สำคัญมาก) ----
+# ---- FIX APACHE (แก้ 403 + เปิด .htaccess) ----
 RUN a2dismod mpm_event mpm_worker \
     && a2enmod mpm_prefork rewrite \
     && echo "<Directory /var/www/html>\n\
+    Options Indexes FollowSymLinks\n\
     AllowOverride All\n\
     Require all granted\n\
 </Directory>" > /etc/apache2/conf-available/wordpress.conf \
     && a2enconf wordpress
 
-# ---- PERMISSION ----
+# ---- PERMISSIONS ----
 RUN chown -R www-data:www-data /var/www/html
 
-# ---- ENTRYPOINT ----
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# ---- PORT (Railway ใช้ dynamic แต่ Apache ใช้ 80 ได้เลย) ----
+EXPOSE 80
 
-ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
