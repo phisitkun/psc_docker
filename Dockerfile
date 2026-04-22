@@ -8,13 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
 
-# 2. แก้ปัญหา MPM (ทำตอน Build เลย)
+# 2. แก้ปัญหา MPM Loaded (ทำตอน Build เพื่อให้ติดไปกับ Image)
+# เราใช้ a2dismod/a2enmod ใน RUN เพื่อให้มันเสร็จสิ้นก่อนเริ่ม Container
 RUN a2dismod mpm_event mpm_worker && a2enmod mpm_prefork
 
-# 3. แก้ปัญหา AH00558 (ServerName) โดยสร้างไฟล์ config ใหม่
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
-
-# 4. ตั้งค่า Permissions
+# 3. ตั้งค่า Permissions
 RUN chown -R www-data:www-data /var/www/html
 
-# --- สังเกตว่าเราไม่ใช้ CMD แล้ว! ให้ใช้ Default Entrypoint ของ Image ---
+# สังเกตว่าเราไม่มี CMD แล้ว เพราะเราจะใช้ CMD เดิมของ Image ที่จัดการเรื่อง Copy file ให้เรา
