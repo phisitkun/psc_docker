@@ -1,0 +1,16 @@
+{
+  "name": "wordpress-railway",
+  "version": "0.1.0",
+  "description": "WordPress on Railway | Node.js/Docker | Zero Config | Seamless Local Dev (custom plugins/themes/uploads)",
+  "type": "module",
+  "scripts": {
+    "start": "docker compose -f compose.yaml up",
+    "stop": "docker compose -f compose.yaml down",
+    "restart": "yarn stop && yarn start",
+    "clean": "docker compose -f compose.yaml down --volumes --rmi all",
+    "clean:restart": "yarn clean && yarn start",
+    "dirs": "node ensure-dirs.js",
+    "dirs:clean": "node ensure-dirs.js clean"
+  },
+  "packageManager": "yarn@4.12.0"
+}
